@@ -6,8 +6,18 @@ import sys
 import pyautogui
 from datetime import datetime
 from PIL import Image
+import ctypes
 
 try:
+    # CORREÇÃO DO PRINT PRETO: Torna o app consciente de DPI no Windows
+    try:
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)
+    except Exception:
+        try:
+            ctypes.windll.user32.SetProcessDPIAware()
+        except Exception:
+            pass # Ignora se não for Windows
+
     ctk.set_appearance_mode("dark")
     ctk.set_default_color_theme("blue")
 
@@ -15,7 +25,7 @@ try:
         def __init__(self):
             super().__init__()
 
-            self.title("Audit Sample Generator - v1.3")
+            self.title("Audit Sample Generator - v1.4")
             self.geometry("550x700")
 
             self.box_principal = ctk.CTkFrame(self, corner_radius=15)
@@ -69,10 +79,11 @@ try:
 
             self.lbl_res = ctk.CTkLabel(self.box_principal, text="Resultado (Sorteio - Item):")
             self.lbl_res.pack(padx=20, pady=(10, 0), anchor="w")
-            self.txt_res = ctk.CTkTextbox(self.box_principal, height=250)
-            self.txt_res.pack(padx=20, pady=10, fill="x")
+            
+            # CORREÇÃO DA RESPONSIVIDADE: fill="both" e expand=True
+            self.txt_res = ctk.CTkTextbox(self.box_principal)
+            self.txt_res.pack(padx=20, pady=10, fill="both", expand=True)
 
-            # Frame de Ações Finais (Copiar e Salvar)
             self.box_acoes = ctk.CTkFrame(self.box_principal, fg_color="transparent")
             self.box_acoes.pack(pady=(0, 20))
 
@@ -89,7 +100,7 @@ try:
                 self.box_acoes, 
                 text="📸 Salvar Evidência", 
                 command=self.acao_salvar_print,
-                fg_color="#059669", # Verde esmeralda para 'salvar'
+                fg_color="#059669", 
                 hover_color="#10b981"
             )
             self.btn_salvar.pack(side="left", padx=10)
@@ -137,27 +148,19 @@ try:
 
         def acao_salvar_print(self):
             try:
-                # 1. Minimiza a janela rapidamente para não pegar o cursor do mouse no botão
-                # (opcional, mas deixa o print mais limpo)
-                
-                # 2. Captura as coordenadas da janela
                 x = self.winfo_rootx()
                 y = self.winfo_rooty()
                 w = self.winfo_width()
                 h = self.winfo_height()
                 
-                # 3. Tira o print da região exata da janela
                 screenshot = pyautogui.screenshot(region=(x, y, w, h))
                 
-                # 4. Gera o nome do arquivo: ANO-MES-DIA_HORA-MIN-SEG_SEED.png
                 agora = datetime.now()
                 data_str = agora.strftime("%Y-%m-%d_%H-%M-%S")
                 seed_val = self.ent_seed.get().strip() or "S_ALEATORIA"
                 nome_arquivo = f"{data_str}_{seed_val}.png"
                 
-                # 5. Salva a imagem
                 screenshot.save(nome_arquivo)
-                
                 messagebox.showinfo("Evidência Salva", f"Print salvo com sucesso como:\n{nome_arquivo}")
             except Exception as e:
                 messagebox.showerror("Erro ao Salvar", f"Não foi possível salvar a imagem:\n{e}")
