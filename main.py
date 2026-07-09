@@ -10,8 +10,8 @@ class AuditSampleApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("Audit Sample Generator - v1.0")
-        self.geometry("600x700")
+        self.title("Audit Sample Generator - v1.1")
+        self.geometry("500x600")
 
         # Main Frame
         self.main_frame = ctk.CTkFrame(self, corner_radius=15)
@@ -29,23 +29,23 @@ class AuditSampleApp(ctk.CTk):
         self.input_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
         self.input_frame.pack(padx=20, pady=10, fill="x")
 
+        # Universe Size
+        self.univ_label = ctk.CTkLabel(self.input_frame, text="Tamanho do Universo:")
+        self.univ_label.grid(row=0, column=0, padx=10, pady=10, sticky="w")
+        self.univ_entry = ctk.CTkEntry(self.input_frame, placeholder_text="Ex: 100")
+        self.univ_entry.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
+
         # Sample Size
         self.size_label = ctk.CTkLabel(self.input_frame, text="Tamanho da Amostra:")
-        self.size_label.grid(row=0, column=0, padx=10, pady=10, sticky="w")
-        self.size_entry = ctk.CTkEntry(self.input_frame, placeholder_text="Ex: 10")
-        self.size_entry.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
+        self.size_label.grid(row=1, column=0, padx=10, pady=10, sticky="w")
+        self.size_entry = ctk.CTkEntry(self.input_frame, placeholder_text="Ex: 25")
+        self.size_entry.grid(row=1, column=1, padx=10, pady=10, sticky="ew")
 
         # Seed
         self.seed_label = ctk.CTkLabel(self.input_frame, text="Seed (Semente):")
-        self.seed_label.grid(row=1, column=0, padx=10, pady=10, sticky="w")
+        self.seed_label.grid(row=2, column=0, padx=10, pady=10, sticky="w")
         self.seed_entry = ctk.CTkEntry(self.input_frame, placeholder_text="Ex: 12345")
-        self.seed_entry.grid(row=1, column=1, padx=10, pady=10, sticky="ew")
-
-        # Item List
-        self.items_label = ctk.CTkLabel(self.main_frame, text="Lista de Itens (um por linha):")
-        self.items_label.pack(padx=20, pady=(10, 0), anchor="w")
-        self.items_text = ctk.CTkTextbox(self.main_frame, height=200)
-        self.items_text.pack(padx=20, pady=10, fill="x")
+        self.seed_entry.grid(row=2, column=1, padx=10, pady=10, sticky="ew")
 
         # Button
         self.generate_button = ctk.CTkButton(
@@ -59,7 +59,7 @@ class AuditSampleApp(ctk.CTk):
         # Result Section
         self.result_label = ctk.CTkLabel(self.main_frame, text="Resultado (Sorteio - Item):")
         self.result_label.pack(padx=20, pady=(10, 0), anchor="w")
-        self.result_text = ctk.CTkTextbox(self.main_frame, height=200)
+        self.result_text = ctk.CTkTextbox(self.main_frame, height=250)
         self.result_text.pack(padx=20, pady=10, fill="x")
 
         # Copy Button
@@ -77,38 +77,35 @@ class AuditSampleApp(ctk.CTk):
     def generate_sample(self):
         try:
             # Captura inputs
+            universe_size = int(self.univ_entry.get())
             sample_size = int(self.size_entry.get())
             seed_val = self.seed_entry.get()
-            items_raw = self.items_text.get("1.0", "end-1c")
             
-            if not items_raw.strip():
-                messagebox.showwarning("Aviso", "Por favor, insira a lista de itens.")
+            if universe_size <= 0 or sample_size <= 0:
+                messagebox.showwarning("Aviso", "Os tamanhos devem ser números positivos.")
                 return
 
-            # Limpa a lista de itens
-            items = [line.strip() for line in items_raw.split('\\n') if line.strip()]
-            
-            if sample_size <= 0:
-                messagebox.showwarning("Aviso", "O tamanho da amostra deve ser maior que zero.")
+            if sample_size > universe_size:
+                messagebox.showwarning("Aviso", f"A amostra ({sample_size}) não pode ser maior que o universo ({universe_size}).")
                 return
 
-            if sample_size > len(items):
-                messagebox.showwarning("Aviso", f"O tamanho da amostra ({sample_size}) é maior que o universo de itens ({len(items)}).")
-                return
-
-            # Lógica da Seed
+            # Lógica da Seed para reprodutibilidade
             if seed_val:
                 random.seed(seed_val)
             else:
                 random.seed() # Random real
 
-            # Sorteio sem repetição
-            sample = random.sample(items, sample_size)
+            # Sorteio de números únicos dentro do universo
+            # range(1, universe_size + 1) cria a lista de 1 até o total
+            sample = random.sample(range(1, universe_size + 1), sample_size)
             
-            # Formatação do resultado
+            # Ordenamos a amostra para facilitar a auditoria (opcional, mas recomendado)
+            sample.sort()
+            
+            # Formatação do resultado (Ex: 1 - item 12)
             result_lines = []
-            for i, item in enumerate(sample, 1):
-                result_lines.append(f"{i} - {item}")
+            for i, item_num in enumerate(sample, 1):
+                result_lines.append(f"{i} - item {item_num}")
             
             final_result = "\\n".join(result_lines)
             
@@ -117,7 +114,7 @@ class AuditSampleApp(ctk.CTk):
             self.result_text.insert("1.0", final_result)
 
         except ValueError:
-            messagebox.showerror("Erro", "O tamanho da amostra deve ser um número inteiro.")
+            messagebox.showerror("Erro", "Por favor, insira números inteiros válidos.")
 
     def copy_result(self):
         self.result_text.get("1.0", "end-1c")
