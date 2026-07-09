@@ -3,6 +3,9 @@ import random
 from tkinter import messagebox
 import traceback
 import sys
+import pyautogui
+from datetime import datetime
+from PIL import Image
 
 try:
     ctk.set_appearance_mode("dark")
@@ -12,8 +15,8 @@ try:
         def __init__(self):
             super().__init__()
 
-            self.title("Audit Sample Generator - v1.2")
-            self.geometry("550x650")
+            self.title("Audit Sample Generator - v1.3")
+            self.geometry("550x700")
 
             self.box_principal = ctk.CTkFrame(self, corner_radius=15)
             self.box_principal.pack(padx=20, pady=20, fill="both", expand=True)
@@ -69,14 +72,28 @@ try:
             self.txt_res = ctk.CTkTextbox(self.box_principal, height=250)
             self.txt_res.pack(padx=20, pady=10, fill="x")
 
+            # Frame de Ações Finais (Copiar e Salvar)
+            self.box_acoes = ctk.CTkFrame(self.box_principal, fg_color="transparent")
+            self.box_acoes.pack(pady=(0, 20))
+
             self.btn_copiar = ctk.CTkButton(
-                self.box_principal, 
+                self.box_acoes, 
                 text="Copiar Resultado", 
                 command=self.acao_copiar,
                 fg_color="#1e293b", 
                 hover_color="#334155"
             )
-            self.btn_copiar.pack(pady=(0, 20))
+            self.btn_copiar.pack(side="left", padx=10)
+
+            self.btn_salvar = ctk.CTkButton(
+                self.box_acoes, 
+                text="📸 Salvar Evidência", 
+                command=self.acao_salvar_print,
+                fg_color="#059669", # Verde esmeralda para 'salvar'
+                hover_color="#10b981"
+            )
+            self.btn_salvar.pack(side="left", padx=10)
+
             self.box_entradas.grid_columnconfigure(1, weight=1)
 
         def acao_seed_aleatoria(self):
@@ -117,6 +134,33 @@ try:
             self.clipboard_clear()
             self.clipboard_append(self.txt_res.get("1.0", "end-1c"))
             messagebox.showinfo("Sucesso", "Resultado copiado para a área de transferência!")
+
+        def acao_salvar_print(self):
+            try:
+                # 1. Minimiza a janela rapidamente para não pegar o cursor do mouse no botão
+                # (opcional, mas deixa o print mais limpo)
+                
+                # 2. Captura as coordenadas da janela
+                x = self.winfo_rootx()
+                y = self.winfo_rooty()
+                w = self.winfo_width()
+                h = self.winfo_height()
+                
+                # 3. Tira o print da região exata da janela
+                screenshot = pyautogui.screenshot(region=(x, y, w, h))
+                
+                # 4. Gera o nome do arquivo: ANO-MES-DIA_HORA-MIN-SEG_SEED.png
+                agora = datetime.now()
+                data_str = agora.strftime("%Y-%m-%d_%H-%M-%S")
+                seed_val = self.ent_seed.get().strip() or "S_ALEATORIA"
+                nome_arquivo = f"{data_str}_{seed_val}.png"
+                
+                # 5. Salva a imagem
+                screenshot.save(nome_arquivo)
+                
+                messagebox.showinfo("Evidência Salva", f"Print salvo com sucesso como:\n{nome_arquivo}")
+            except Exception as e:
+                messagebox.showerror("Erro ao Salvar", f"Não foi possível salvar a imagem:\n{e}")
 
     if __name__ == "__main__":
         app = AuditSampleApp()
