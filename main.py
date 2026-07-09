@@ -10,6 +10,7 @@ from PIL import Image
 import ctypes
 
 try:
+    # Força o Windows a tratar o app como DPI Aware para evitar borrões e erros de posição
     try:
         ctypes.windll.shcore.SetProcessDpiAwareness(1)
     except Exception:
@@ -25,9 +26,10 @@ try:
         def __init__(self):
             super().__init__()
 
-            self.title("Audit Sample Generator - v1.5")
+            self.title("Audit Sample Generator - v1.6")
             self.geometry("550x700")
 
+            # Frame Principal Responsivo
             self.box_principal = ctk.CTkFrame(self, corner_radius=15)
             self.box_principal.pack(padx=20, pady=20, fill="both", expand=True)
 
@@ -105,6 +107,18 @@ try:
 
             self.box_entradas.grid_columnconfigure(1, weight=1)
 
+        def get_scaling_factor(self):
+            try:
+                # Tenta obter o fator de escala do monitor atual via Win32 API
+                # LOGPIXELSX (88) retorna a resolução horizontal em pixels por polegada
+                # 96 pixels por polegada é o padrão (100%)
+                hdc = ctypes.windll.user32.GetDC(0)
+                dpi_x = ctypes.windll.gdi32.GetDeviceCaps(hdc, 88)
+                ctypes.windll.user32.ReleaseDC(0, hdc)
+                return dpi_x / 96.0
+            except Exception:
+                return 1.0
+
         def acao_seed_aleatoria(self):
             random_seed = str(random.randint(1, 999999))
             self.ent_seed.delete(0, "end")
@@ -146,12 +160,15 @@ try:
 
         def acao_salvar_print(self):
             try:
+                scale = self.get_scaling_factor()
+                
+                # Multiplica as coordenadas lógicas pelo fator de escala do monitor
+                x = int(self.winfo_rootx() * scale)
+                y = int(self.winfo_rooty() * scale)
+                w = int(self.winfo_width() * scale)
+                h = int(self.winfo_height() * scale)
+                
                 with mss.mss() as sct:
-                    x = self.winfo_rootx()
-                    y = self.winfo_rooty()
-                    w = self.winfo_width()
-                    h = self.winfo_height()
-                    
                     monitor = {"top": y, "left": x, "width": w, "height": h}
                     screenshot = sct.grab(monitor)
                     
