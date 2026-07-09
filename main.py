@@ -23,7 +23,7 @@ try:
         def __init__(self):
             super().__init__()
 
-            self.title("Audit Sample Generator - v1.9")
+            self.title("Audit Sample Generator - v2.0")
             self.geometry("600x750")
             self.minsize(500, 600)
 
@@ -147,7 +147,6 @@ try:
 
         def acao_salvar_evidencia(self):
             try:
-                # Pegar dados para o relatório
                 u_size = self.ent_univ.get()
                 s_size = self.ent_size.get()
                 seed_val = self.ent_seed.get().strip() or "S_ALEATORIA"
@@ -157,16 +156,21 @@ try:
                     messagebox.showwarning("Aviso", "Gere uma amostra antes de salvar a evidência.")
                     return
 
-                # Configurações da Imagem (Canvas)
-                largura, altura = 600, 800
-                cor_fundo = (15, 23, 42) # Dark Slate (estilo app)
+                itens = resultados.split("\n")
+                num_itens = len(itens)
+                
+                # CÁLCULO DE ALTURA DINÂMICA
+                # Cabeçalho (~150px) + Itens (num * 22px) + Rodapé (~60px) + Margens
+                altura_dinamica = 200 + (num_itens * 22) + 100
+                largura = 600
+                
+                cor_fundo = (15, 23, 42)
                 cor_texto = (255, 255, 255)
-                cor_detalhe = (59, 130, 246) # Azul Moderno
+                cor_detalhe = (59, 130, 246)
 
-                img = Image.new("RGB", (largura, altura), color=cor_fundo)
+                img = Image.new("RGB", (largura, altura_dinamica), color=cor_fundo)
                 draw = ImageDraw.Draw(img)
 
-                # Tentar carregar fonte Arial, senão usa a padrão
                 try:
                     font_titulo = ImageFont.truetype("arial.ttf", 30)
                     font_corpo = ImageFont.truetype("arial.ttf", 18)
@@ -176,14 +180,10 @@ try:
                     font_corpo = ImageFont.load_default()
                     font_itens = ImageFont.load_default()
 
-                # Desenhar Cabeçalho
                 draw.text((largura//2, 50), "CERTIFICADO DE SORTEIO", fill=cor_detalhe, font=font_titulo, anchor="mm")
                 draw.text((largura//2, 90), "Evidência de Amostragem de Auditoria", fill=cor_texto, font=font_corpo, anchor="mm")
-                
-                # Linha divisória
                 draw.line((50, 110, largura-50, 110), fill=cor_detalhe, width=2)
 
-                # Detalhes do Sorteio
                 agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                 detalhes = [
                     f"Data/Hora: {agora}",
@@ -197,24 +197,17 @@ try:
                     draw.text((50, y_offset), linha, fill=cor_texto, font=font_corpo)
                     y_offset += 30
 
-                # Lista de Itens
                 draw.text((50, y_offset + 20), "Itens Sorteados:", fill=cor_detalhe, font=font_corpo)
                 y_offset += 50
                 
-                itens = resultados.split("\n")
                 for item in itens:
                     if item.strip():
                         draw.text((60, y_offset), item, fill=cor_texto, font=font_itens)
                         y_offset += 22
-                        # Se a lista for muito longa, paramos para não sair da imagem
-                        if y_offset > altura - 50:
-                            draw.text((60, y_offset), "... (lista continua no relatório)", fill=cor_texto, font=font_itens)
-                            break
 
-                # Rodapé
-                draw.text((largura//2, altura-40), "Gerado por Audit Sample Generator v1.9", fill=cor_detalhe, font=font_corpo, anchor="mm")
+                # RODAPÉ SEMPRE NO FINAL DA IMAGEM DINÂMICA
+                draw.text((largura//2, altura_dinamica - 40), "Gerado por Audit Sample Generator v2.0", fill=cor_detalhe, font=font_corpo, anchor="mm")
 
-                # Salvar Arquivo
                 nome_arquivo = f"Evidencia_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{seed_val}.png"
                 img.save(nome_arquivo)
                 
