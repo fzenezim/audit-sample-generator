@@ -3,20 +3,20 @@ import random
 from tkinter import messagebox
 import traceback
 import sys
-import pyautogui
+import mss
+import mss.tools
 from datetime import datetime
 from PIL import Image
 import ctypes
 
 try:
-    # CORREÇÃO DO PRINT PRETO: Torna o app consciente de DPI no Windows
     try:
         ctypes.windll.shcore.SetProcessDpiAwareness(1)
     except Exception:
         try:
             ctypes.windll.user32.SetProcessDPIAware()
         except Exception:
-            pass # Ignora se não for Windows
+            pass
 
     ctk.set_appearance_mode("dark")
     ctk.set_default_color_theme("blue")
@@ -25,7 +25,7 @@ try:
         def __init__(self):
             super().__init__()
 
-            self.title("Audit Sample Generator - v1.4")
+            self.title("Audit Sample Generator - v1.5")
             self.geometry("550x700")
 
             self.box_principal = ctk.CTkFrame(self, corner_radius=15)
@@ -79,8 +79,6 @@ try:
 
             self.lbl_res = ctk.CTkLabel(self.box_principal, text="Resultado (Sorteio - Item):")
             self.lbl_res.pack(padx=20, pady=(10, 0), anchor="w")
-            
-            # CORREÇÃO DA RESPONSIVIDADE: fill="both" e expand=True
             self.txt_res = ctk.CTkTextbox(self.box_principal)
             self.txt_res.pack(padx=20, pady=10, fill="both", expand=True)
 
@@ -148,20 +146,23 @@ try:
 
         def acao_salvar_print(self):
             try:
-                x = self.winfo_rootx()
-                y = self.winfo_rooty()
-                w = self.winfo_width()
-                h = self.winfo_height()
-                
-                screenshot = pyautogui.screenshot(region=(x, y, w, h))
-                
-                agora = datetime.now()
-                data_str = agora.strftime("%Y-%m-%d_%H-%M-%S")
-                seed_val = self.ent_seed.get().strip() or "S_ALEATORIA"
-                nome_arquivo = f"{data_str}_{seed_val}.png"
-                
-                screenshot.save(nome_arquivo)
-                messagebox.showinfo("Evidência Salva", f"Print salvo com sucesso como:\n{nome_arquivo}")
+                with mss.mss() as sct:
+                    x = self.winfo_rootx()
+                    y = self.winfo_rooty()
+                    w = self.winfo_width()
+                    h = self.winfo_height()
+                    
+                    monitor = {"top": y, "left": x, "width": w, "height": h}
+                    screenshot = sct.grab(monitor)
+                    
+                    agora = datetime.now()
+                    data_str = agora.strftime("%Y-%m-%d_%H-%M-%S")
+                    seed_val = self.ent_seed.get().strip() or "S_ALEATORIA"
+                    nome_arquivo = f"{data_str}_{seed_val}.png"
+                    
+                    mss.tools.to_png(screenshot.rgb, screenshot.size, output=nome_arquivo)
+                    
+                    messagebox.showinfo("Evidência Salva", f"Print salvo com sucesso como:\n{nome_arquivo}")
             except Exception as e:
                 messagebox.showerror("Erro ao Salvar", f"Não foi possível salvar a imagem:\n{e}")
 
