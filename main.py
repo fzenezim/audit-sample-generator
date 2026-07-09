@@ -23,7 +23,7 @@ try:
         def __init__(self):
             super().__init__()
 
-            self.title("Audit Sample Generator - v2.0")
+            self.title("Audit Sample Generator - v2.1")
             self.geometry("600x750")
             self.minsize(500, 600)
 
@@ -159,16 +159,16 @@ try:
                 itens = resultados.split("\n")
                 num_itens = len(itens)
                 
-                # CÁLCULO DE ALTURA DINÂMICA
-                # Cabeçalho (~150px) + Itens (num * 22px) + Rodapé (~60px) + Margens
-                altura_dinamica = 200 + (num_itens * 22) + 100
+                # CÁLCULO PRECISO DE ALTURA
+                # Topo (120) + Detalhes (120) + Rótulo Itens (50) + Itens (num * 22) + Margem final (50)
+                altura_total = 300 + (num_itens * 22) + 50
                 largura = 600
                 
                 cor_fundo = (15, 23, 42)
                 cor_texto = (255, 255, 255)
                 cor_detalhe = (59, 130, 246)
 
-                img = Image.new("RGB", (largura, altura_dinamica), color=cor_fundo)
+                img = Image.new("RGB", (largura, altura_total), color=cor_fundo)
                 draw = ImageDraw.Draw(img)
 
                 try:
@@ -180,9 +180,12 @@ try:
                     font_corpo = ImageFont.load_default()
                     font_itens = ImageFont.load_default()
 
-                draw.text((largura//2, 50), "CERTIFICADO DE SORTEIO", fill=cor_detalhe, font=font_titulo, anchor="mm")
-                draw.text((largura//2, 90), "Evidência de Amostragem de Auditoria", fill=cor_texto, font=font_corpo, anchor="mm")
-                draw.line((50, 110, largura-50, 110), fill=cor_detalhe, width=2)
+                # MARCA D'ÁGUA NO TOPO
+                draw.text((largura//2, 30), "Audit Sample Generator v2.1", fill=cor_detalhe, font=font_corpo, anchor="mm")
+                
+                draw.text((largura//2, 70), "CERTIFICADO DE SORTEIO", fill=cor_detalhe, font=font_titulo, anchor="mm")
+                draw.text((largura//2, 110), "Evidência de Amostragem de Auditoria", fill=cor_texto, font=font_corpo, anchor="mm")
+                draw.line((50, 130, largura-50, 130), fill=cor_detalhe, width=2)
 
                 agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                 detalhes = [
@@ -192,7 +195,7 @@ try:
                     f"Seed Utilizada: {seed_val}"
                 ]
                 
-                y_offset = 150
+                y_offset = 160
                 for linha in detalhes:
                     draw.text((50, y_offset), linha, fill=cor_texto, font=font_corpo)
                     y_offset += 30
@@ -204,9 +207,6 @@ try:
                     if item.strip():
                         draw.text((60, y_offset), item, fill=cor_texto, font=font_itens)
                         y_offset += 22
-
-                # RODAPÉ SEMPRE NO FINAL DA IMAGEM DINÂMICA
-                draw.text((largura//2, altura_dinamica - 40), "Gerado por Audit Sample Generator v2.0", fill=cor_detalhe, font=font_corpo, anchor="mm")
 
                 nome_arquivo = f"Evidencia_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{seed_val}.png"
                 img.save(nome_arquivo)
