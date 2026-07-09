@@ -25,7 +25,7 @@ try:
         def __init__(self):
             super().__init__()
 
-            self.title("Audit Sample Generator - v1.8")
+            self.title("Audit Sample Generator - v1.9")
             self.geometry("600x750")
             self.minsize(500, 600)
 
@@ -149,24 +149,22 @@ try:
 
         def acao_salvar_print(self):
             try:
-                # 1. Captura TODA a área de trabalho (Todos os monitores)
                 with mss.mss() as sct:
-                    # a sct.monitors[0] pega a área total combinada de todos os monitores
                     total_monitor = sct.monitors[0]
                     full_screenshot = sct.grab(total_monitor)
                     
-                    # Converte para imagem PIL
-                    img = Image.frombytes("RGB", sct.monitors[0]['width'], sct.monitors[0]['height'], full_screenshot.rgb)
+                    # CORREÇÃO: Passando o tamanho como tupla (width, height)
+                    img = Image.frombytes(
+                        "RGB", 
+                        (total_monitor['width'], total_monitor['height']), 
+                        full_screenshot.rgb
+                    )
                 
-                # 2. Calcula as coordenadas da janela
                 x = self.winfo_rootx()
                 y = self.winfo_rooty()
                 w = self.winfo_width()
                 h = self.winfo_height()
                 
-                # 3. Recorta a imagem da janela a partir do print total
-                # O ImageGrab/mss às vezes lida com DPI de forma diferente, então 
-                # fazemos um ajuste preventivo se a imagem for maior que a tela lógica
                 screenshot_crop = img.crop((x, y, x + w, y + h))
                 
                 agora = datetime.now()
