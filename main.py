@@ -3,14 +3,12 @@ import random
 from tkinter import messagebox
 import traceback
 import sys
-import mss
-import mss.tools
 from datetime import datetime
-from PIL import Image
+from PIL import Image, ImageGrab
 import ctypes
 
 try:
-    # Força o Windows a tratar o app como DPI Aware para evitar borrões e erros de posição
+    # Força o Windows a tratar o app com DPI correto para evitar borrões e prints errados
     try:
         ctypes.windll.shcore.SetProcessDpiAwareness(1)
     except Exception:
@@ -26,22 +24,27 @@ try:
         def __init__(self):
             super().__init__()
 
-            self.title("Audit Sample Generator - v1.6")
-            self.geometry("550x700")
+            self.title("Audit Sample Generator - v1.7")
+            self.geometry("600x750")
+            self.minsize(500, 600)
 
-            # Frame Principal Responsivo
+            # Container Principal Centralizado
             self.box_principal = ctk.CTkFrame(self, corner_radius=15)
-            self.box_principal.pack(padx=20, pady=20, fill="both", expand=True)
+            self.box_principal.pack(padx=40, pady=30, fill="both", expand=True)
 
             self.txt_titulo = ctk.CTkLabel(
                 self.box_principal, 
                 text="Gerador de Amostras de Auditoria", 
-                font=ctk.CTkFont(size=20, weight="bold")
+                font=ctk.CTkFont(size=22, weight="bold")
             )
-            self.txt_titulo.pack(pady=(20, 20))
+            self.txt_titulo.pack(pady=(30, 20))
 
+            # Seção de Entradas (com largura máxima para não esticar no monitor grande)
             self.box_entradas = ctk.CTkFrame(self.box_principal, fg_color="transparent")
             self.box_entradas.pack(padx=20, pady=10, fill="x")
+
+            # Grid de entradas
+            self.box_entradas.grid_columnconfigure(1, weight=1)
 
             self.lbl_univ = ctk.CTkLabel(self.box_entradas, text="Tamanho do Universo:")
             self.lbl_univ.grid(row=0, column=0, padx=10, pady=10, sticky="w")
@@ -75,17 +78,20 @@ try:
                 self.box_principal, 
                 text="Gerar Amostra", 
                 command=self.acao_gerar,
-                font=ctk.CTkFont(weight="bold")
+                font=ctk.CTkFont(size=15, weight="bold"),
+                height=40
             )
-            self.btn_gerar.pack(pady=20)
+            self.btn_gerar.pack(pady=30)
 
             self.lbl_res = ctk.CTkLabel(self.box_principal, text="Resultado (Sorteio - Item):")
             self.lbl_res.pack(padx=20, pady=(10, 0), anchor="w")
-            self.txt_res = ctk.CTkTextbox(self.box_principal)
+            
+            # Área de resultado responsiva (expande verticalmente)
+            self.txt_res = ctk.CTkTextbox(self.box_principal, font=ctk.CTkFont(family="Consolas", size=13))
             self.txt_res.pack(padx=20, pady=10, fill="both", expand=True)
 
             self.box_acoes = ctk.CTkFrame(self.box_principal, fg_color="transparent")
-            self.box_acoes.pack(pady=(0, 20))
+            self.box_acoes.pack(pady=(0, 30))
 
             self.btn_copiar = ctk.CTkButton(
                 self.box_acoes, 
@@ -104,20 +110,6 @@ try:
                 hover_color="#10b981"
             )
             self.btn_salvar.pack(side="left", padx=10)
-
-            self.box_entradas.grid_columnconfigure(1, weight=1)
-
-        def get_scaling_factor(self):
-            try:
-                # Tenta obter o fator de escala do monitor atual via Win32 API
-                # LOGPIXELSX (88) retorna a resolução horizontal em pixels por polegada
-                # 96 pixels por polegada é o padrão (100%)
-                hdc = ctypes.windll.user32.GetDC(0)
-                dpi_x = ctypes.windll.gdi32.GetDeviceCaps(hdc, 88)
-                ctypes.windll.user32.ReleaseDC(0, hdc)
-                return dpi_x / 96.0
-            except Exception:
-                return 1.0
 
         def acao_seed_aleatoria(self):
             random_seed = str(random.randint(1, 999999))
@@ -160,26 +152,22 @@ try:
 
         def acao_salvar_print(self):
             try:
-                scale = self.get_scaling_factor()
+                # Pega a posição e tamanho da janela
+                x = self.winfo_rootx()
+                y = self.winfo_rooty()
+                w = self.winfo_width()
+                h = self.winfo_height()
                 
-                # Multiplica as coordenadas lógicas pelo fator de escala do monitor
-                x = int(self.winfo_rootx() * scale)
-                y = int(self.winfo_rooty() * scale)
-                w = int(self.winfo_width() * scale)
-                h = int(self.winfo_height() * scale)
+                # Captura usando ImageGrab (mais estável com DPI do Windows)
+                screenshot = ImageGrab.grab(bbox=(x, y, x + w, y + h))
                 
-                with mss.mss() as sct:
-                    monitor = {"top": y, "left": x, "width": w, "height": h}
-                    screenshot = sct.grab(monitor)
-                    
-                    agora = datetime.now()
-                    data_str = agora.strftime("%Y-%m-%d_%H-%M-%S")
-                    seed_val = self.ent_seed.get().strip() or "S_ALEATORIA"
-                    nome_arquivo = f"{data_str}_{seed_val}.png"
-                    
-                    mss.tools.to_png(screenshot.rgb, screenshot.size, output=nome_arquivo)
-                    
-                    messagebox.showinfo("Evidência Salva", f"Print salvo com sucesso como:\n{nome_arquivo}")
+                agora = datetime.now()
+                data_str = agora.strftime("%Y-%m-%d_%H-%M-%S")
+                seed_val = self.ent_seed.get().strip() or "S_ALEATORIA"
+                nome_arquivo = f"{data_str}_{seed_val}.png"
+                
+                screenshot.save(nome_arquivo)
+                messagebox.showinfo("Evidência Salva", f"Print salvo com sucesso como:\n{nome_arquivo}")
             except Exception as e:
                 messagebox.showerror("Erro ao Salvar", f"Não foi possível salvar a imagem:\n{e}")
 
