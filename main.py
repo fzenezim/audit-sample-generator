@@ -3,10 +3,8 @@ import random
 from tkinter import messagebox
 import traceback
 import sys
-import mss
-import mss.tools
 from datetime import datetime
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import ctypes
 
 try:
@@ -102,7 +100,7 @@ try:
             self.btn_salvar = ctk.CTkButton(
                 self.box_acoes, 
                 text="📸 Salvar Evidência", 
-                command=self.acao_salvar_print,
+                command=self.acao_salvar_evidencia,
                 fg_color="#059669", 
                 hover_color="#10b981"
             )
@@ -147,35 +145,82 @@ try:
             self.clipboard_append(self.txt_res.get("1.0", "end-1c"))
             messagebox.showinfo("Sucesso", "Resultado copiado para a área de transferência!")
 
-        def acao_salvar_print(self):
+        def acao_salvar_evidencia(self):
             try:
-                with mss.mss() as sct:
-                    total_monitor = sct.monitors[0]
-                    full_screenshot = sct.grab(total_monitor)
-                    
-                    # CORREÇÃO: Passando o tamanho como tupla (width, height)
-                    img = Image.frombytes(
-                        "RGB", 
-                        (total_monitor['width'], total_monitor['height']), 
-                        full_screenshot.rgb
-                    )
-                
-                x = self.winfo_rootx()
-                y = self.winfo_rooty()
-                w = self.winfo_width()
-                h = self.winfo_height()
-                
-                screenshot_crop = img.crop((x, y, x + w, y + h))
-                
-                agora = datetime.now()
-                data_str = agora.strftime("%Y-%m-%d_%H-%M-%S")
+                # Pegar dados para o relatório
+                u_size = self.ent_univ.get()
+                s_size = self.ent_size.get()
                 seed_val = self.ent_seed.get().strip() or "S_ALEATORIA"
-                nome_arquivo = f"{data_str}_{seed_val}.png"
+                resultados = self.txt_res.get("1.0", "end-1c").strip()
                 
-                screenshot_crop.save(nome_arquivo)
-                messagebox.showinfo("Evidência Salva", f"Print salvo com sucesso como:\n{nome_arquivo}")
+                if not resultados:
+                    messagebox.showwarning("Aviso", "Gere uma amostra antes de salvar a evidência.")
+                    return
+
+                # Configurações da Imagem (Canvas)
+                largura, altura = 600, 800
+                cor_fundo = (15, 23, 42) # Dark Slate (estilo app)
+                cor_texto = (255, 255, 255)
+                cor_detalhe = (59, 130, 246) # Azul Moderno
+
+                img = Image.new("RGB", (largura, altura), color=cor_fundo)
+                draw = ImageDraw.Draw(img)
+
+                # Tentar carregar fonte Arial, senão usa a padrão
+                try:
+                    font_titulo = ImageFont.truetype("arial.ttf", 30)
+                    font_corpo = ImageFont.truetype("arial.ttf", 18)
+                    font_itens = ImageFont.truetype("consola.ttf", 16)
+                except:
+                    font_titulo = ImageFont.load_default()
+                    font_corpo = ImageFont.load_default()
+                    font_itens = ImageFont.load_default()
+
+                # Desenhar Cabeçalho
+                draw.text((largura//2, 50), "CERTIFICADO DE SORTEIO", fill=cor_detalhe, font=font_titulo, anchor="mm")
+                draw.text((largura//2, 90), "Evidência de Amostragem de Auditoria", fill=cor_texto, font=font_corpo, anchor="mm")
+                
+                # Linha divisória
+                draw.line((50, 110, largura-50, 110), fill=cor_detalhe, width=2)
+
+                # Detalhes do Sorteio
+                agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                detalhes = [
+                    f"Data/Hora: {agora}",
+                    f"Tamanho do Universo: {u_size}",
+                    f"Tamanho da Amostra: {s_size}",
+                    f"Seed Utilizada: {seed_val}"
+                ]
+                
+                y_offset = 150
+                for linha in detalhes:
+                    draw.text((50, y_offset), linha, fill=cor_texto, font=font_corpo)
+                    y_offset += 30
+
+                # Lista de Itens
+                draw.text((50, y_offset + 20), "Itens Sorteados:", fill=cor_detalhe, font=font_corpo)
+                y_offset += 50
+                
+                itens = resultados.split("\n")
+                for item in itens:
+                    if item.strip():
+                        draw.text((60, y_offset), item, fill=cor_texto, font=font_itens)
+                        y_offset += 22
+                        # Se a lista for muito longa, paramos para não sair da imagem
+                        if y_offset > altura - 50:
+                            draw.text((60, y_offset), "... (lista continua no relatório)", fill=cor_texto, font=font_itens)
+                            break
+
+                # Rodapé
+                draw.text((largura//2, altura-40), "Gerado por Audit Sample Generator v1.9", fill=cor_detalhe, font=font_corpo, anchor="mm")
+
+                # Salvar Arquivo
+                nome_arquivo = f"Evidencia_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{seed_val}.png"
+                img.save(nome_arquivo)
+                
+                messagebox.showinfo("Evidência Salva", f"Relatório digital salvo com sucesso como:\n{nome_arquivo}")
             except Exception as e:
-                messagebox.showerror("Erro ao Salvar", f"Não foi possível salvar a imagem:\n{e}")
+                messagebox.showerror("Erro ao Salvar", f"Não foi possível gerar a imagem:\n{e}")
 
     if __name__ == "__main__":
         app = AuditSampleApp()
