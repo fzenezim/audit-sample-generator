@@ -1,4 +1,4 @@
 customtkinter==5.2.2
-pyinstaller==6.3.0
-pyautogui==0.9.54
-Pillow==10.2.0
+pyinstaller
+mss
+Pillow

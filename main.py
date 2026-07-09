@@ -3,9 +3,8 @@ import random
 from tkinter import messagebox
 import traceback
 import sys
-from datetime import datetime
-from PIL import Image, ImageDraw, ImageFont
 import ctypes
+from audit_core import generate_sample, generate_evidence_image
 
 try:
     try:
@@ -39,7 +38,6 @@ try:
 
             self.box_entradas = ctk.CTkFrame(self.box_principal, fg_color="transparent")
             self.box_entradas.pack(padx=20, pady=10, fill="x")
-
             self.box_entradas.grid_columnconfigure(1, weight=1)
 
             self.lbl_univ = ctk.CTkLabel(self.box_entradas, text="Tamanho do Universo:")
@@ -117,28 +115,13 @@ try:
                 s_size = int(self.ent_size.get())
                 s_val = self.ent_seed.get().strip()
                 
-                if u_size <= 0 or s_size <= 0:
-                    messagebox.showwarning("Aviso", "Os tamanhos devem ser números positivos.")
-                    return
-                if s_size > u_size:
-                    messagebox.showwarning("Aviso", f"A amostra ({s_size}) não pode ser maior que o universo ({u_size}).")
-                    return
+                # Chama o motor de sorteio
+                amostra = generate_sample(u_size, s_size, s_val)
                 
-                if s_val:
-                    random.seed(s_val)
-                else:
-                    random.seed()
-
-                amostra = random.sample(range(1, u_size + 1), s_size)
-                amostra.sort()
-                linhas = []
-                for i, item_num in enumerate(amostra, 1):
-                    linhas.append(f"{i} - item {item_num}")
-                texto_final = "\n".join(linhas)
                 self.txt_res.delete("1.0", "end")
-                self.txt_res.insert("1.0", texto_final)
-            except ValueError:
-                messagebox.showerror("Erro", "Por favor, insira números inteiros válidos.")
+                self.txt_res.insert("1.0", "\n".join(amostra))
+            except Exception as e:
+                messagebox.showerror("Erro", f"Erro ao gerar amostra: {e}")
 
         def acao_copiar(self):
             self.clipboard_clear()
@@ -149,69 +132,16 @@ try:
             try:
                 u_size = self.ent_univ.get()
                 s_size = self.ent_size.get()
-                seed_val = self.ent_seed.get().strip() or "S_ALEATORIA"
-                resultados = self.txt_res.get("1.0", "end-1c").strip()
+                seed_val = self.ent_seed.get().strip()
+                resultados = self.txt_res.get("1.0", "end-1c").strip().split("\n")
                 
-                if not resultados:
+                if not resultados or resultados == ['']:
                     messagebox.showwarning("Aviso", "Gere uma amostra antes de salvar a evidência.")
                     return
 
-                itens = resultados.split("\n")
-                num_itens = len(itens)
-                
-                # CÁLCULO PRECISO DE ALTURA
-                # Topo (120) + Detalhes (120) + Rótulo Itens (50) + Itens (num * 22) + Margem final (50)
-                altura_total = 300 + (num_itens * 22) + 50
-                largura = 600
-                
-                cor_fundo = (15, 23, 42)
-                cor_texto = (255, 255, 255)
-                cor_detalhe = (59, 130, 246)
-
-                img = Image.new("RGB", (largura, altura_total), color=cor_fundo)
-                draw = ImageDraw.Draw(img)
-
-                try:
-                    font_titulo = ImageFont.truetype("arial.ttf", 30)
-                    font_corpo = ImageFont.truetype("arial.ttf", 18)
-                    font_itens = ImageFont.truetype("consola.ttf", 16)
-                except:
-                    font_titulo = ImageFont.load_default()
-                    font_corpo = ImageFont.load_default()
-                    font_itens = ImageFont.load_default()
-
-                # MARCA D'ÁGUA NO TOPO
-                draw.text((largura//2, 30), "Audit Sample Generator v2.1", fill=cor_detalhe, font=font_corpo, anchor="mm")
-                
-                draw.text((largura//2, 70), "CERTIFICADO DE SORTEIO", fill=cor_detalhe, font=font_titulo, anchor="mm")
-                draw.text((largura//2, 110), "Evidência de Amostragem de Auditoria", fill=cor_texto, font=font_corpo, anchor="mm")
-                draw.line((50, 130, largura-50, 130), fill=cor_detalhe, width=2)
-
-                agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                detalhes = [
-                    f"Data/Hora: {agora}",
-                    f"Tamanho do Universo: {u_size}",
-                    f"Tamanho da Amostra: {s_size}",
-                    f"Seed Utilizada: {seed_val}"
-                ]
-                
-                y_offset = 160
-                for linha in detalhes:
-                    draw.text((50, y_offset), linha, fill=cor_texto, font=font_corpo)
-                    y_offset += 30
-
-                draw.text((50, y_offset + 20), "Itens Sorteados:", fill=cor_detalhe, font=font_corpo)
-                y_offset += 50
-                
-                for item in itens:
-                    if item.strip():
-                        draw.text((60, y_offset), item, fill=cor_texto, font=font_itens)
-                        y_offset += 22
-
-                nome_arquivo = f"Evidencia_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{seed_val}.png"
-                img.save(nome_arquivo)
-                
-                messagebox.showinfo("Evidência Salva", f"Relatório digital salvo com sucesso como:\n{nome_arquivo}")
+                # Chama o motor de imagem
+                path = generate_evidence_image(u_size, s_size, seed_val, resultados)
+                messagebox.showinfo("Evidência Salva", f"Relatório digital salvo com sucesso como:\n{path}")
             except Exception as e:
                 messagebox.showerror("Erro ao Salvar", f"Não foi possível gerar a imagem:\n{e}")
 
