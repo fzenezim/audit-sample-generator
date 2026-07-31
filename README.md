@@ -46,3 +46,20 @@ The executable will be located in the `dist/` folder as `AuditSampleGenerator.ex
 4. Click **Generate Sample**.
 5. **Save Evidence:** Click the 📸 button to generate a digital certificate of the sampling process for your audit papers.
 6. **Copy Result:** Copy the list and paste it into your working papers.
+
+## 🤖 CLI Usage (Automation)
+You can run the generator via terminal for automated workflows (e.g., integration with n8n or local scripts):
+
+```bash
+python cli.py --universo <TOTAL> --amostra <TAMANHO> --seed <SEMEADURA> --evidencia
+```
+
+- `--universo`: Total number of items.
+- `--amostra`: Number of items to draw.
+- `--seed`: (Optional) Use a specific seed for reproducibility.
+- `--evidencia`: (Optional) Flag to generate the digital evidence PNG file.
+
+Example:
+```bash
+python cli.py --universo 1000 --amostra 50 --seed 123 --evidencia
+```
