@@ -34,7 +34,7 @@ To convert this script into a standalone Windows executable with a professional 
 
 ```bash
 pip install pyinstaller
-pyinstaller --noconsole --onefile --collect-all customtkinter --name "AuditSampleGenerator" main.py
+pyinstaller --noconsole --onedir --collect-all customtkinter --name "AuditSampleGenerator" main.py
 ```
 
 The executable will be located in the `dist/` folder as `AuditSampleGenerator.exe`.

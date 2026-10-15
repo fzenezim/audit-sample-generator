@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+audit-venv/
+build/
+dist/
+*.spec
+*.zip
